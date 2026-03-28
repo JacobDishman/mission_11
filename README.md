@@ -27,4 +27,3 @@ cd mission_11
 cd backend
 dotnet run
 
-go back to the frontend folder

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Mission11.API.Data;
+using Mission11.API.Models;
 
 namespace Mission11.API.Controllers
 {
@@ -146,6 +147,57 @@ namespace Mission11.API.Controllers
                 .ToListAsync();
 
             return Ok(categories);
+        }
+
+        // POST /api/books
+        // Creates a new book in the database.
+        // The [ApiController] attribute automatically validates the model
+        // and returns 400 if required fields are missing.
+        // BookID should be sent as 0 — SQLite AUTOINCREMENT assigns the real ID.
+        [HttpPost]
+        public async Task<IActionResult> CreateBook(Book book)
+        {
+            _context.Books.Add(book);
+            await _context.SaveChangesAsync();
+            return Created($"/api/books/{book.BookID}", book);
+        }
+
+        // PUT /api/books/{id}
+        // Updates an existing book. The URL id must match the BookID in the request body.
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateBook(int id, Book book)
+        {
+            if (id != book.BookID)
+                return BadRequest("ID mismatch");
+
+            _context.Entry(book).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.Books.AnyAsync(b => b.BookID == id))
+                    return NotFound();
+                throw;
+            }
+
+            return NoContent();
+        }
+
+        // DELETE /api/books/{id}
+        // Deletes a book by its ID. Returns 404 if not found.
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteBook(int id)
+        {
+            var book = await _context.Books.FindAsync(id);
+            if (book == null)
+                return NotFound();
+
+            _context.Books.Remove(book);
+            await _context.SaveChangesAsync();
+            return NoContent();
         }
     }
 }

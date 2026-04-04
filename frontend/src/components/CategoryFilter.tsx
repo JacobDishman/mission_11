@@ -19,7 +19,8 @@ const CategoryFilter = ({ selectedCategory, onCategoryChange }: CategoryFilterPr
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch('http://localhost:5184/api/books/categories');
+                const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:5184';
+                const response = await fetch(`${apiBase}/api/books/categories`);
                 const data = await response.json();
                 setCategories(data);
             } catch (error) {

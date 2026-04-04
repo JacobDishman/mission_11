@@ -13,13 +13,14 @@
 //   - Reading URL params so "Continue Shopping" brings you back to the right page
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import type { Book } from '../types/Book';
 import { useCart } from '../context/CartContext';
 import CategoryFilter from './CategoryFilter';
 import CartSummary from './CartSummary';
 
 const BookList = () => {
+    const navigate = useNavigate();
     // Read URL query params — this is how "Continue Shopping" restores your spot
     const [searchParams] = useSearchParams();
 
@@ -58,7 +59,8 @@ const BookList = () => {
             setLoading(true);
             try {
                 // Build the URL — only add category param if one is selected
-                let url = `http://localhost:5184/api/books?pageNumber=${pageNumber}&pageSize=${pageSize}&sortByTitle=${sortByTitle}`;
+                const apiBase = import.meta.env.VITE_API_URL ?? 'http://localhost:5184';
+                let url = `${apiBase}/api/books?pageNumber=${pageNumber}&pageSize=${pageSize}&sortByTitle=${sortByTitle}`;
                 if (selectedCategory) {
                     // encodeURIComponent handles spaces and special chars in category names
                     url += `&category=${encodeURIComponent(selectedCategory)}`;
@@ -131,7 +133,10 @@ const BookList = () => {
             {/* Header — store name on left, cart button on right */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2>Hilton's Bookstore</h2>
-                <CartSummary />
+                <div>
+                    <button className="btn btn-outline-primary me-2" onClick={() => navigate('/adminbooks')}>Admin</button>
+                    <CartSummary />
+                </div>
             </div>
 
             <hr />

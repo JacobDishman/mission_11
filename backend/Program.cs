@@ -33,8 +33,19 @@ builder.Services.AddOpenApi();
 // The connection string "Data Source=Bookstore.sqlite" tells SQLite to look for
 // a file called Bookstore.sqlite in the project's working directory (backend/).
 // This connection string is stored in appsettings.json under "ConnectionStrings".
-builder.Services.AddDbContext<BookstoreContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("BookstoreConnection")));
+// Use SQL Server if a connection string named "DefaultConnection" is provided (Azure),
+// otherwise fall back to SQLite for local development.
+var sqlServerConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+if (!string.IsNullOrEmpty(sqlServerConnection))
+{
+    builder.Services.AddDbContext<BookstoreContext>(options =>
+        options.UseSqlServer(sqlServerConnection));
+}
+else
+{
+    builder.Services.AddDbContext<BookstoreContext>(options =>
+        options.UseSqlite(builder.Configuration.GetConnectionString("BookstoreConnection")));
+}
 
 // ============================================================
 // STEP 3: Configure CORS (Cross-Origin Resource Sharing)
@@ -52,6 +63,16 @@ builder.Services.AddDbContext<BookstoreContext>(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173",
+                           "https://localhost:5173")
+              .SetIsOriginAllowedToAllowWildcardSubdomains()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+
+    // Separate policy for Azure — the actual URL gets added after deployment
+    options.AddPolicy("AllowAzure", policy =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyHeader()
@@ -79,7 +100,15 @@ if (app.Environment.IsDevelopment())
 
 // Apply the CORS policy we defined above. This MUST come before MapControllers()
 // so that CORS headers are added to responses before the controller handles the request.
-app.UseCors("AllowReactApp");
+// Use the Azure CORS policy in production, local policy in development
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("AllowReactApp");
+}
+else
+{
+    app.UseCors("AllowAzure");
+}
 
 // Redirect HTTP requests to HTTPS for security
 app.UseHttpsRedirection();
